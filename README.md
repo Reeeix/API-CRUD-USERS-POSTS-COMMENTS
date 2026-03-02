@@ -69,14 +69,13 @@ index.js
 
 ### 📝 Post (post)
 
-- `title` (String, requerido)
-- `content` (String, requerido)
+- `text` (String, requerido)
 - `author` (ObjectId → referencia a `user`)
 - `timestamps` activados
 
 ### 💬 Comentario (comment)
 
-- `text` (String, requerido)
+- `content` (String, requerido)
 - `author` (ObjectId → referencia a `user`)
 - `post` (ObjectId → referencia a `post`)
 - `timestamps` activados
@@ -87,6 +86,9 @@ index.js
 
 Se ha creado una semilla de **usuarios** para inicializar la base de datos con datos de prueba usando `create` de Mongoose.
 
+- Incluye usuarios con rol `user` y `admin` para probar todos los endpoints.
+- Es idempotente para esos usuarios de prueba: antes de insertar, elimina solo los emails definidos en la seed.
+
 ---
 
 ## 🔗 Endpoints disponibles
@@ -95,8 +97,9 @@ Se ha creado una semilla de **usuarios** para inicializar la base de datos con d
 
 | Método | Endpoint      | Descripción                         | Autenticación / Rol           |
 | ------ | ------------- | ----------------------------------- | ----------------------------- |
+| POST   | /users/login  | Iniciar sesión                      | ✖ (Público)                   |
 | GET    | /users        | Obtener todos los usuarios           | ✔ (Cualquier usuario logueado) |
-| POST   | /users/register | Crear un nuevo usuario             | ✔ (Solo usuario)              |
+| POST   | /users/register | Crear un nuevo usuario             | ✖ (Público)                   |
 | PUT    | /users/:id    | Actualizar un usuario                | ✔ (Solo admin)               |
 | DELETE | /users/:id    | Eliminar un usuario                  | ✔ (Propietario o admin)      |
 
@@ -105,6 +108,7 @@ Se ha creado una semilla de **usuarios** para inicializar la base de datos con d
 | Método | Endpoint      | Descripción                         | Autenticación / Rol           |
 | ------ | ------------- | ----------------------------------- | ----------------------------- |
 | GET    | /posts        | Obtener todos los posts              | ✔ |
+| GET    | /posts/:id    | Obtener un post por id               | ✔ |
 | POST   | /posts        | Crear un nuevo post                  | ✔ |
 | PUT    | /posts/:id    | Actualizar post                      | ✔ (Propietario o admin)      |
 | DELETE | /posts/:id    | Eliminar post                        | ✔ (Propietario o admin)      |
@@ -114,6 +118,7 @@ Se ha creado una semilla de **usuarios** para inicializar la base de datos con d
 | Método | Endpoint        | Descripción                         | Autenticación / Rol           |
 | ------ | --------------- | ----------------------------------- | ----------------------------- |
 | GET    | /comments       | Obtener todos los comentarios        | ✔ |
+| GET    | /comments/:id   | Obtener un comentario por id         | ✔ |
 | POST   | /comments       | Crear un nuevo comentario            | ✔ |
 | PUT    | /comments/:id   | Actualizar comentario                | ✔ (Propietario o admin)      |
 | DELETE | /comments/:id   | Eliminar comentario                  | ✔ (Propietario o admin)      |
@@ -127,7 +132,13 @@ Se ha creado una semilla de **usuarios** para inicializar la base de datos con d
   - El usuario es el propietario del recurso
   - O tiene rol `admin`
 - **`onlyAdmin`**: Permite acceso solo a administradores.
-- **`onlyUser`**: Permite acceso solo a usuarios normales.
+
+### ✅ Seguridad aplicada
+
+- El campo `password` no se devuelve en `login` ni en `getUsers`.
+- En creación de usuarios, el `role` se fuerza por defecto a `user`.
+- En creación de posts/comentarios, el `author` se toma de `req.user._id` para evitar suplantación.
+- En comentarios, se valida que el `post` exista antes de guardar.
 
 ---
 
@@ -174,7 +185,7 @@ node src/utils/seeds/user.js
 
 ## ⚡ Mejoras futuras
 
-Si esta API fuera una aplicación real, se podrían implementar las siguientes mejoras para aumentar la seguridad y la funcionalidad, de las cuales me di cuenta mientra probaba los enspoints con insomnia.
+Si esta API fuera una aplicación real, se podrían implementar las siguientes mejoras para aumentar la seguridad y la funcionalidad.
 
 1. **Control de comentarios por el autor del post**
    - Permitir que el autor de un post pueda eliminar los comentarios hechos en su post, además del autor del comentario y los admin.
@@ -182,13 +193,7 @@ Si esta API fuera una aplicación real, se podrían implementar las siguientes m
 2. **Filtrado por usuario**
    - Añadir endpoints para obtener todos los posts o comentarios creados por un usuario concreto, permitiendo consultar la actividad de cada usuario.
 
-3. **Validación del autor al crear recursos**
-   - Forzar que el `author` de un post o comentario coincida siempre con el usuario que está logueado (`req.user._id`), para evitar suplantación de identidad al crear contenido.
-
-4. **Roles en el login**
-   - No sería necesario que el usuario envíe su rol al iniciar sesión; el sistema debería asignarlo automáticamente desde la base de datos, usando únicamente email y contraseña para autenticar.
-
-5. **Mayor control de permisos**
+3. **Mayor control de permisos**
    - Posibilidad de crear reglas más finas de autorización, como que solo el autor o los administradores puedan editar ciertos recursos, o incluso permisos por tipo de contenido.
 
 
@@ -202,6 +207,5 @@ Este proyecto demuestra:
 - Control de roles y permisos
 - Manejo de autenticación con JWT
 - Buenas prácticas en organización de proyecto y modularización de código
-- 
 
 

@@ -16,13 +16,16 @@ const users = [
   {
     email: 'pandachuli@gmail.com',
     password: 'panditasalpoder',
-    role: 'user'
+    role: 'admin'
   }
 ];
 
 const createUsers = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
+
+    const seedEmails = users.map((user) => user.email);
+    await User.deleteMany({ email: { $in: seedEmails } });
 
     await User.create(users); // aquí se ejecuta el pre('save')
 
